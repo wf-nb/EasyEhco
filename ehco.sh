@@ -28,6 +28,11 @@ if [ $EUID -ne 0 ] || [ ${Get_User} != "root" ]; then
 	exit 1
 fi
 
+#
+function Check_Status() {
+	Get_Pid=$(ps -ef| grep "ehco"| grep -v grep| grep -v ".sh"| grep -v "init.d"| grep -v "service"| awk '{print $2}')
+}
+
 #检查系统
 function Check_System() {
 	if [[ -f /etc/redhat-release ]]; then
@@ -169,12 +174,14 @@ function Update_Ehco() {
 
 #卸载Ehco
 function Uninstall_Ehco() {
-	if test -o /usr/bin/ehco -o /etc/systemd/system/ehco.service -o /etc/ehco/config.json;then
+	if test -o /usr/bin/ehco -o /etc/systemd/system/ehco.service -o ${Path_Dir}/config.json;then
 		sleep 5s
 		systemctl stop ehco.service
 		systemctl disable ehco.service
 		rm -rf /usr/bin/ehco
 		rm -rf /etc/systemd/system/ehco.service
+		rm -rf ${Path_Dir}/ehco
+		rm -rf ${Path_Dir}/config.json
 		echo -e "${Success} 成功卸载 Ehco "
 		sleep 5s
 		Show_Menu
@@ -342,7 +349,7 @@ function Show_Rule() {
 	echo -e "序号|方法\t|本地端口|tcp中转地址 \t| udp中转地址"
 	echo -e "----------------------------------------------------------------------------------"
 	Count_Rules=$(echo $Get_Config_Rules | jq -r ".[]|\"\(.listen)\"" | wc -l)
-	for((i=00;i<${Count_Rules};i++));do
+	for((i=0;i<${Count_Rules};i++));do
 		#Get_Rule_InfoA=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.label)\"")
 		Get_Rule_InfoA=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.listen)\"" | awk -F ":" '{print $2}')
 		Get_Rule_InfoB=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.listen_type)\"")
@@ -383,9 +390,25 @@ function Show_Rule() {
 }
 
 #添加到本地配置文件
-#function Add_Config() {
-#	
-#}
+function Add_Config() {
+	if [ ! -z $1 ] && [ ! -z $2 ] && [ ! -z $3 ] && [ ! -z $4 ] && [ ! -z $5 ] && [ ! -z $6 ] && [ ! -z $7 ] && [ ! -z $8 ]; then
+		Rule_Json="{\"listen\":\"$1:$2\",\"listen_type\":\"$3\",\"transport_type\":\"$4\",\"tcp_remotes\":[\"$5:$6\"],\"udp_remotes\":[\"$7:$8\"]}"
+		Rule_Result=$(echo "$Get_Config_Text" | jq --argjson Rule_Arr "$Rule_Json" '.relay_configs += [$Rule_Arr]')
+		if [ ! -z "$Rule_Result" ]; then
+			echo $Rule_Result > $Path_Dir/config.json
+			systemctl restart ehco
+			echo -e "${Success} 添加转发规则成功，即将返回主菜单"
+			sleep 3s
+			Show_Menu
+		else
+			echo -e "${Error} 添加转发规则失败，请检查错误信息"
+			exit 1
+		fi
+	else
+		echo -e "${Error} 未传入配置参数"
+		exit 1
+	fi
+}
 
 #tcp/udp无加密转发
 function Add_Relay() {
@@ -419,17 +442,238 @@ function Add_Relay() {
 		exit 1
 	fi
 	echo -e "${Info} 正在初始化添加转发"
-	sleep 2s
-	Get_Config
-	Rules_Json="{{\"listen\":\"$Read_Local_IP:Read_Local_Port\",\"listen_type\":\"raw\",\"transport_type\":\"raw\",\"tcp_remotes\":[\"$Read_Remote_IP:$Read_Remote_Port\"]}}"
-	if [ $(jq '.[] + "Rules_Json"' <<< "$Get_Config_Rules") ]; then
-		echo -e "${Success} 添加转发成功，即将返回主菜单"
-		sleep 3s
-		Show_Menu
-	else
-		echo -e "${Error} 添加转发失败，请检查错误信息"
+	echo -e "${Info} 检测端口占用"
+	sleep 1s
+	Check_Port "$Read_Local_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "raw" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+}
+
+#ws隧道加密转发
+function Add_Encryptws() {
+	echo -e "当前转发模式：ws隧道加密转发"
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要侦听哪个IP呢？"
+	echo -e "注: IP请填写所需的网卡IP, 全网口侦听请输入0.0.0.0"
+	read -p "请输入 默认127.0.0.1 " Read_Local_IP
+	if [ ! -n "$Read_Local_IP" ]; then
+		Read_Local_IP="127.0.0.1"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要加密哪个端口收到的流量呢？"
+	read -p "请输入 默认23333 " Read_Local_Port
+	if [ ! -n "$Read_Local_Port" ]; then
+		Read_Local_Port="23333"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要将[$Read_Local_Port]加密流量转发至哪个远程服务器IP或域名呢？"
+	echo -e "注: 请确认已在远程服务器上部署了隧道解密端"
+	read -p "请输入 " Read_Remote_IP
+	if [ ! -n "$Read_Remote_IP" ]; then
+		echo -e "${Error} 未输入远程服务器地址"
 		exit 1
 	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要将[$Read_Local_Port]加密流量转发至[$Read_Remote_IP]的哪个端口呢？"
+	read -p "请输入 " Read_Remote_Port
+	if [ ! -n "$Read_Remote_Port" ]; then
+		echo -e "${Error} 未输入远程服务器端口"
+		exit 1
+	fi
+	echo -e "${Info} 正在初始化添加转发"
+	echo -e "${Info} 检测端口占用"
+	sleep 1s
+	Check_Port "$Read_Local_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "ws" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+}
+
+#wss隧道加密转发
+function Add_Encryptwss() {
+	echo -e "当前转发模式：wss隧道加密转发"
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要侦听哪个IP呢？"
+	echo -e "注: IP请填写所需的网卡IP, 全网口侦听请输入0.0.0.0"
+	read -p "请输入 默认127.0.0.1 " Read_Local_IP
+	if [ ! -n "$Read_Local_IP" ]; then
+		Read_Local_IP="127.0.0.1"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要加密哪个端口收到的流量呢？"
+	read -p "请输入 默认23333 " Read_Local_Port
+	if [ ! -n "$Read_Local_Port" ]; then
+		Read_Local_Port="23333"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要将[$Read_Local_Port]加密流量转发至哪个远程服务器IP或域名呢？"
+	echo -e "注: 请确认已在远程服务器上部署了隧道解密端"
+	read -p "请输入 " Read_Remote_IP
+	if [ ! -n "$Read_Remote_IP" ]; then
+		echo -e "${Error} 未输入远程服务器地址"
+		exit 1
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要将[$Read_Local_Port]加密流量转发至[$Read_Remote_IP]的哪个端口呢？"
+	read -p "请输入 " Read_Remote_Port
+	if [ ! -n "$Read_Remote_Port" ]; then
+		echo -e "${Error} 未输入远程服务器端口"
+		exit 1
+	fi
+	echo -e "${Info} 正在初始化添加转发"
+	echo -e "${Info} 检测端口占用"
+	sleep 1s
+	Check_Port "$Read_Local_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "wss" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+}
+
+#mwss隧道加密转发
+function Add_Encryptmwss() {
+	echo -e "当前转发模式：mwss隧道加密转发"
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要侦听哪个IP呢？"
+	echo -e "注: IP请填写所需的网卡IP, 全网口侦听请输入0.0.0.0"
+	read -p "请输入 默认127.0.0.1 " Read_Local_IP
+	if [ ! -n "$Read_Local_IP" ]; then
+		Read_Local_IP="127.0.0.1"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要加密哪个端口收到的流量呢？"
+	read -p "请输入 默认23333 " Read_Local_Port
+	if [ ! -n "$Read_Local_Port" ]; then
+		Read_Local_Port="23333"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要将[$Read_Local_Port]加密流量转发至哪个远程服务器IP或域名呢？"
+	echo -e "注: 请确认已在远程服务器上部署了隧道解密端"
+	read -p "请输入 " Read_Remote_IP
+	if [ ! -n "$Read_Remote_IP" ]; then
+		echo -e "${Error} 未输入远程服务器地址"
+		exit 1
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要将[$Read_Local_Port]加密流量转发至[$Read_Remote_IP]的哪个端口呢？"
+	read -p "请输入 " Read_Remote_Port
+	if [ ! -n "$Read_Remote_Port" ]; then
+		echo -e "${Error} 未输入远程服务器端口"
+		exit 1
+	fi
+	echo -e "${Info} 正在初始化添加转发"
+	echo -e "${Info} 检测端口占用"
+	sleep 1s
+	Check_Port "$Read_Local_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "mwss" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+}
+
+#ws隧道解密落地
+function Add_Dncryptws() {
+	echo -e "当前转发模式：ws隧道解密落地"
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要侦听哪个IP呢？"
+	echo -e "注: IP请填写所需的网卡IP, 全网口侦听请输入0.0.0.0"
+	read -p "请输入 默认127.0.0.1 " Read_Local_IP
+	if [ ! -n "$Read_Local_IP" ]; then
+		Read_Local_IP="127.0.0.1"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要解密哪个端口收到的流量呢？"
+	read -p "请输入 默认23333 " Read_Local_Port
+	if [ ! -n "$Read_Local_Port" ]; then
+		Read_Local_Port="23333"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问你要将本机从[$Read_Local_Port]接收到的流量转发向哪个IP或域名？"
+	echo -e "注: IP既可以是[远程机器/当前机器]的公网IP, 也可是以本地回环IP（即127.0.0.1）"
+	read -p "请输入 " Read_Remote_IP
+	if [ ! -n "$Read_Remote_IP" ]; then
+		echo -e "${Error} 未输入远程服务器地址"
+		exit 1
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问你要将本机从[$Read_Local_Port]接收到的流量转发向[$Read_Remote_IP]的哪个端口呢？"
+	read -p "请输入 " Read_Remote_Port
+	if [ ! -n "$Read_Remote_Port" ]; then
+		echo -e "${Error} 未输入远程服务器端口"
+		exit 1
+	fi
+	echo -e "${Info} 正在初始化添加转发"
+	echo -e "${Info} 检测端口占用"
+	sleep 1s
+	Check_Port "$Read_Local_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "ws" "raw" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+}
+
+#wss隧道解密落地
+function Add_Dncryptws() {
+	echo -e "当前转发模式：wss隧道解密落地"
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要侦听哪个IP呢？"
+	echo -e "注: IP请填写所需的网卡IP, 全网口侦听请输入0.0.0.0"
+	read -p "请输入 默认127.0.0.1 " Read_Local_IP
+	if [ ! -n "$Read_Local_IP" ]; then
+		Read_Local_IP="127.0.0.1"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要解密哪个端口收到的流量呢？"
+	read -p "请输入 默认23333 " Read_Local_Port
+	if [ ! -n "$Read_Local_Port" ]; then
+		Read_Local_Port="23333"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问你要将本机从[$Read_Local_Port]接收到的流量转发向哪个IP或域名？"
+	echo -e "注: IP既可以是[远程机器/当前机器]的公网IP, 也可是以本地回环IP（即127.0.0.1）"
+	read -p "请输入 " Read_Remote_IP
+	if [ ! -n "$Read_Remote_IP" ]; then
+		echo -e "${Error} 未输入远程服务器地址"
+		exit 1
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问你要将本机从[$Read_Local_Port]接收到的流量转发向[$Read_Remote_IP]的哪个端口呢？"
+	read -p "请输入 " Read_Remote_Port
+	if [ ! -n "$Read_Remote_Port" ]; then
+		echo -e "${Error} 未输入远程服务器端口"
+		exit 1
+	fi
+	echo -e "${Info} 正在初始化添加转发"
+	echo -e "${Info} 检测端口占用"
+	sleep 1s
+	Check_Port "$Read_Local_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "wss" "raw" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+}
+
+#mwss隧道解密落地
+function Add_Dncryptws() {
+	echo -e "当前转发模式：mwss隧道解密落地"
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要侦听哪个IP呢？"
+	echo -e "注: IP请填写所需的网卡IP, 全网口侦听请输入0.0.0.0"
+	read -p "请输入 默认127.0.0.1 " Read_Local_IP
+	if [ ! -n "$Read_Local_IP" ]; then
+		Read_Local_IP="127.0.0.1"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问需要解密哪个端口收到的流量呢？"
+	read -p "请输入 默认23333 " Read_Local_Port
+	if [ ! -n "$Read_Local_Port" ]; then
+		Read_Local_Port="23333"
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问你要将本机从[$Read_Local_Port]接收到的流量转发向哪个IP或域名？"
+	echo -e "注: IP既可以是[远程机器/当前机器]的公网IP, 也可是以本地回环IP（即127.0.0.1）"
+	read -p "请输入 " Read_Remote_IP
+	if [ ! -n "$Read_Remote_IP" ]; then
+		echo -e "${Error} 未输入远程服务器地址"
+		exit 1
+	fi
+    echo -e "------------------------------------------------------------------"
+	echo -e "请问你要将本机从[$Read_Local_Port]接收到的流量转发向[$Read_Remote_IP]的哪个端口呢？"
+	read -p "请输入 " Read_Remote_Port
+	if [ ! -n "$Read_Remote_Port" ]; then
+		echo -e "${Error} 未输入远程服务器端口"
+		exit 1
+	fi
+	echo -e "${Info} 正在初始化添加转发"
+	echo -e "${Info} 检测端口占用"
+	sleep 1s
+	Check_Port "$Read_Local_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "mwss" "raw" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
 }
 
 #检测端口
@@ -440,12 +684,12 @@ function Check_Port() {
 		exit 1
 	else
 		if [ ! -n "$1" ]; then
-			echo -e "${Error 未传入端口}"
+			echo -e "${Error} 未传入端口"
 			exit 1
 		else
 			Get_Port_Info=$(netstat -nap | grep LISTEN | grep "$1")
-			if [ ! -n "$Get_Port_Info" ]; then
-				echo -e "${Error} 端口已被占用"
+			if [ ! -z "$Get_Port_Info" ]; then
+				echo -e "${Error} 端口[$1]已被占用"
 				exit 1
 			fi
 		fi
@@ -454,7 +698,16 @@ function Check_Port() {
 
 #添加规则
 function Add_Rule() {
-	Get_Config
+	Get_Mode
+	if test "$Get_Config_Mode" = "local"; then
+		Get_Config
+	elif test "$Get_Config_Mode" = "remote"; then
+		echo -e "${Error} 检测到当前模式为远程配置文件，无法使用该脚本进行添加规则"
+		exit 1
+	else
+		echo -e "${Error} 未检测到配置文件模式"
+		exit 1
+	fi
 	sleep 2s
 	echo -e "请选择转发模式："
 	echo -e "-----------------------------------"
@@ -514,10 +767,61 @@ function Add_Rule() {
 	esac
 }
 
-#修改规则
-#function Edit_Rule() {
-#	
-#}
+#删除规则
+function Del_Rule() {
+	Get_Config
+	Count_Rules=$(echo $Get_Config_Rules | jq -r ".[]|\"\(.listen)\"" | wc -l)
+	for((i=0;i<${Count_Rules};i++));do
+		Get_Rule_InfoA=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.listen)\"")
+		Get_Rule_InfoB=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.listen_type)\"")
+		Get_Rule_InfoC=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.transport_type)\"")
+		Get_Rule_InfoDs=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.tcp_remotes)\"")
+		Get_Rule_InfoEs=$(echo "$Get_Config_Rules" | jq -r ".[$i]|\"\(.udp_remotes)\"")
+		if [ "$Get_Rule_InfoB" == "raw" ] && [ "$Get_Rule_InfoC" == "raw" ]; then
+			Relay_Mode="无加密中转"
+		elif [ "$Get_Rule_InfoB" == "raw" ] && [ "$Get_Rule_InfoC" != "raw" ]; then
+			Relay_Mode="$Get_Rule_InfoC隧道加密"
+		elif [ "$Get_Rule_InfoB" != "raw" ] && [ "$Get_Rule_InfoC" == "raw" ]; then
+			Relay_Mode="$Get_Rule_InfoB隧道落地"
+		else
+			Relay_Mode="未知加密方式"
+		fi
+		if [ "$Get_Rule_InfoDs" != "null" ]; then
+			Count_Tcp_Remotes=$(echo $Get_Rule_InfoDs | jq -r ".[]" | wc -l)
+			for((j=0;j<${Count_Tcp_Remotes};j++));do
+				Get_Rule_InfoD=$(echo "$Get_Rule_InfoDs" | jq -r ".[$j]")
+				Tcp_Remotes="$Tcp_Remotes $Get_Rule_InfoD"
+			done
+		fi
+		if [ "$Get_Rule_InfoEs" != "null" ]; then
+			Count_Udp_Remotes=$(echo $Get_Rule_InfoEs | jq -r ".[]" | wc -l)
+			for((k=0;k<${Count_Udp_Remotes};k++));do
+				Get_Rule_InfoE=$(echo "$Get_Rule_InfoEs" | jq -r ".[$k]")
+				Udp_Remotes="$Udp_Remotes $Get_Rule_InfoE"
+			done
+		fi
+		echo -e "$i.$Relay_Mode \t $Get_Rule_InfoA \t->tcp:$Tcp_Remotes \t udp:$Udp_Remotes"
+		Tcp_Remotes=""
+		Udp_Remotes=""
+	done
+	read -p "请输入你要删除的规则编号：" Read_Num
+	if [ "$Read_Num" -gt "$((Count_Rules-1))" ]; then
+		echo -e "${Error} 没有序数为[$Read_Num]的规则"
+		exit 1
+	fi
+	Rule_Json=$(echo $Get_Config_Rules | jq -r ".[$Read_Num]")
+	Rule_Result=$(echo "$Get_Config_Text" | jq --argjson Rule_Arr "$Rule_Json" '.relay_configs -= [$Rule_Arr]')
+	if [ ! -z "$Rule_Result" ]; then
+		echo $Rule_Result > $Path_Dir/config.json
+		systemctl restart ehco
+		echo -e "${Success} 删除转发规则成功，即将返回主菜单"
+		sleep 3s
+		Show_Menu
+	else
+		echo -e "${Error} 删除转发规则失败，请检查错误信息"
+		exit 1
+	fi
+}
 
 #更新脚本
 function Update_Shell() {
@@ -530,7 +834,7 @@ function Update_Shell() {
 		[[ -z "${Read_YN}" ]] && Read_YN="Y"
 		if [[ ${Read_YN} == [Yy] ]]; then
 			wget -N --no-check-certificate https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/ehco.sh && chmod +x ehco.sh
-			echo -e "${Success} 脚本已更新为最新版本[ ${sh_new_ver} ]"
+			echo -e "${Success} 脚本已更新为最新版本[ ${Shell_NewVer} ]"
             sleep 5s
             Show_Menu
 		else
@@ -573,6 +877,16 @@ function Show_Menu() {
 ————————————
  ${Font_Green}12.${Font_None} 更新EasyEhco脚本
 ————————————" && echo
+	if [[ -e "${Path_Dir}/ehco" ]]; then
+		Check_Status
+		if [ ! -z "$Get_Pid" ]; then
+			echo -e " 当前状态: Ehco ${Font_Green}已安装${Font_None} 并 ${Font_Green}已启动${Font_None}"
+		else
+			echo -e " 当前状态: Ehco ${Font_Green}已安装${Font_None} 但 ${Font_Red}未启动${Font_None}"
+		fi
+	else
+		echo -e " 当前状态: Ehco ${Font_Red}未安装${Font_None}"
+	fi
 	read -e -p " 请输入数字 [1-12]:" Read_Num
 	case "$Read_Num" in
 	1)
