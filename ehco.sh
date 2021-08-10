@@ -65,7 +65,7 @@ function Check_System() {
 
 #安装依赖
 function Install_Dependence() {
-	if [[ ${release} == "centos" ]]; then
+	if [[ ${Release} == "centos" ]]; then
 		yum update
 		yum install -y gzip wget curl crontabs vixie-cron net-tools jq
 	else
@@ -87,14 +87,14 @@ function Install_Ehco() {
 			wget -N --no-check-certificate "https://github.weifeng.workers.dev/https://github.com/Ehco1996/ehco/releases/download/v${Ehco_NewVer}/ehco_${Ehco_NewVer}_linux_arm64" -O ehco && chmod +x ehco && mv ehco ${Path_Dir}/ehco
 		else
 			echo "${Error} 与Github交互失败，安装Ehco失败，即将终止运行脚本"
-			sleep 5s
+			sleep 3s
 			exit 1
 		fi
 		ln -s ${Path_Dir}/ehco /usr/bin/ehco
 		Download_Config
 	fi
 	echo -e "${Success} Ehco已经安装完毕，现在开始配置并启动Ehco服务"
-	sleep 5s
+	sleep 3s
 	Init_Ehco
 }
 
@@ -124,7 +124,7 @@ LimitNOFILE=32767
 Type=simple
 User=root
 Restart=on-failure
-RestartSec=5s
+RestartSec=3s
 DynamicUser=true
 ExecStart=/usr/bin/ehco -c /etc/ehco/config.json
 
@@ -135,7 +135,7 @@ WantedBy=multi-user.target" > ehco.service
 	systemctl start ehco
 	systemctl enable ehco
 	echo -e "${Success} 初始化Ehco成功，Ehco正在运行"
-	sleep 5s
+	sleep 3s
 	Show_Menu
 }
 
@@ -150,7 +150,7 @@ function Update_Ehco() {
 		Ehco_NewVer=$(wget -qO- https://github-api.weifeng.workers.dev/repos/Ehco1996/ehco/releases| grep "tag_name"| head -n 1| awk -F ":" '{print $2}'| sed 's/\"//g;s/,//g;s/ //g;s/v//g')
 		if [[ ${Ehco_NewVer} == ${Ehco_Version} ]]; then
 			echo -e "${Info} 本地Ehco已是最新版本，无需更新，即将返回主菜单"
-			sleep 5s
+			sleep 3s
 			Show_Menu
 		else
 			if [[ ${Bit} == "amd64" ]]; then
@@ -167,9 +167,9 @@ function Update_Ehco() {
 		ln -s ${Path_Dir}/ehco /usr/bin/ehco
 		echo -e "${Success} Ehco更新完毕，正在重新启动Ehco服务"
 		systemctl restart ehco
-		sleep 5s
+		sleep 3s
 		echo -e "${Success} 重新启动Ehco服务完毕，即将返回主菜单"
-		sleep 5s
+		sleep 3s
 		Show_Menu
 	fi
 }
@@ -177,7 +177,7 @@ function Update_Ehco() {
 #卸载Ehco
 function Uninstall_Ehco() {
 	if test -o /usr/bin/ehco -o /etc/systemd/system/ehco.service -o ${Path_Dir}/config.json;then
-		sleep 5s
+		sleep 3s
 		systemctl stop ehco.service
 		systemctl disable ehco.service
 		rm -rf /usr/bin/ehco
@@ -185,11 +185,11 @@ function Uninstall_Ehco() {
 		rm -rf ${Path_Dir}/ehco
 		rm -rf ${Path_Dir}/config.json
 		echo -e "${Success} 成功卸载 Ehco "
-		sleep 5s
+		sleep 3s
 		Show_Menu
 	else
 		echo -e "-${Error} 未安装 Ehco"
-		sleep 5s
+		sleep 3s
 		Show_Menu
 	fi
 }
@@ -198,7 +198,7 @@ function Uninstall_Ehco() {
 function Start_Ehco() {
 	systemctl start ehco
 	echo -e "${Success} 成功启动 Ehco"
-	sleep 5s
+	sleep 3s
 	Show_Menu
 }
 
@@ -206,7 +206,7 @@ function Start_Ehco() {
 function Stop_Ehco() {
 	systemctl stop ehco
 	echo -e "${Success} 成功停止 Ehco"
-	sleep 5s
+	sleep 3s
 	Show_Menu
 }
 
@@ -214,7 +214,7 @@ function Stop_Ehco() {
 function Restart_Ehco() {
 	systemctl restart ehco
 	echo -e "${Success} 成功重启 Ehco"
-	sleep 5s
+	sleep 3s
 	Show_Menu
 }
 
@@ -237,13 +237,13 @@ function Config_Mode() {
 			read -p "请输入远程配置文件URL: " Read_Url
 			if [ ! -n "$Read_Url" ]; then
 				echo -e "${Error} 未输入远程配置文件URL"
-				sleep 5s
+				sleep 3s
 				exit 1
 			fi
 			Config_Mode remote "$Read_Url"
 		else
 			echo -e "${Error} 输入错误"
-			sleep 5s
+			sleep 3s
 			exit 1
 		fi
 	else
@@ -263,7 +263,7 @@ LimitNOFILE=32767
 Type=simple
 User=root
 Restart=on-failure
-RestartSec=5s
+RestartSec=3s
 DynamicUser=true
 ExecStart=/usr/bin/ehco -c /etc/ehco/config.json
 
@@ -274,7 +274,7 @@ WantedBy=multi-user.target" > ehco.service
 			systemctl start ehco
 			systemctl enable ehco
 			echo -e "${Success} 成功切换为本地配置文件模式"
-			sleep 5s
+			sleep 3s
 			exit 1
 		elif test "$1" = "remote"; then
 			if [ ! -d ${Path_Dir} ]; then
@@ -291,7 +291,7 @@ LimitNOFILE=32767
 Type=simple
 User=root
 Restart=on-failure
-RestartSec=5s
+RestartSec=3s
 DynamicUser=true
 ExecStart=/usr/bin/ehco -c $2
 
@@ -302,11 +302,11 @@ WantedBy=multi-user.target" > ehco.service
 			systemctl start ehco
 			systemctl enable ehco
 			echo -e "${Success} 成功切换为远程配置文件模式"
-			sleep 5s
+			sleep 3s
 			exit 1
 		else
 			echo -e "${Error} 切换配置文件模式失败"
-			sleep 5s
+			sleep 3s
 			exit 1
 		fi
 	fi
@@ -837,16 +837,16 @@ function Update_Shell() {
 		if [[ ${Read_YN} == [Yy] ]]; then
 			wget -N --no-check-certificate https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/ehco.sh && chmod +x ehco.sh
 			echo -e "${Success} 脚本已更新为最新版本[ ${Shell_NewVer} ]"
-            sleep 5s
+            sleep 3s
             Show_Menu
 		else
 			echo -e "${Success} 已取消..."
-            sleep 5s
+            sleep 3s
             Show_Menu
 		fi
 	else
 		echo -e "${Info} 当前已是最新版本[ ${Shell_Version} ]"
-		sleep 5s
+		sleep 3s
         Show_Menu
 	fi
 }
