@@ -565,7 +565,7 @@ function Add_Encryptmwss() {
 }
 
 #ws隧道解密落地
-function Add_Dncryptws() {
+function Add_Decryptws() {
 	echo -e "当前转发模式：ws隧道解密落地"
     echo -e "------------------------------------------------------------------"
 	echo -e "请问需要侦听哪个IP呢？"
@@ -603,7 +603,7 @@ function Add_Dncryptws() {
 }
 
 #wss隧道解密落地
-function Add_Dncryptwss() {
+function Add_Decryptwss() {
 	echo -e "当前转发模式：wss隧道解密落地"
     echo -e "------------------------------------------------------------------"
 	echo -e "请问需要侦听哪个IP呢？"
@@ -641,7 +641,7 @@ function Add_Dncryptwss() {
 }
 
 #mwss隧道解密落地
-function Add_Dncryptmwss() {
+function Add_Decryptmwss() {
 	echo -e "当前转发模式：mwss隧道解密落地"
     echo -e "------------------------------------------------------------------"
 	echo -e "请问需要侦听哪个IP呢？"
