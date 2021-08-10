@@ -530,11 +530,11 @@ function Update_Shell() {
 		[[ -z "${Read_YN}" ]] && Read_YN="Y"
 		if [[ ${Read_YN} == [Yy] ]]; then
 			wget -N --no-check-certificate https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/ehco.sh && chmod +x ehco.sh
-			echo -e "{$Success} 脚本已更新为最新版本[ ${sh_new_ver} ]"
+			echo -e "${Success} 脚本已更新为最新版本[ ${sh_new_ver} ]"
             sleep 5s
             Show_Menu
 		else
-			echo -e "{$Success} 已取消..."
+			echo -e "${Success} 已取消..."
             sleep 5s
             Show_Menu
 		fi
