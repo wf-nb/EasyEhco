@@ -524,7 +524,7 @@ function Update_Shell() {
 	echo -e "${Info} 当前版本为 [ ${Shell_Version} ]，开始检测最新版本..."
 	Shell_NewVer=$(wget --no-check-certificate -qO- "https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/ehco.sh"|grep 'Shell_Version="'|awk -F "=" '{print $NF}'|sed 's/\"//g'|head -1)
 	[[ -z ${Shell_NewVer} ]] && echo -e "${Error} 检测最新版本失败" && Show_Menu
-	if [ ${Shell_NewVer} -gt ${Shell_Version} ]; then
+	if [ $(awk -v Shell_NewVer="$Shell_NewVer" -v Shell_Version="$Shell_Version"  'BEGIN{print(Shell_NewVer>Shell_Version)?"1":"0"}') ]; then
 		echo -e "${Info} 发现新版本[ ${Shell_NewVer} ]，是否更新？[Y/n]"
 		read -p "(默认: Y):" Read_YN
 		[[ -z "${Read_YN}" ]] && Read_YN="Y"
