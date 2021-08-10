@@ -872,7 +872,7 @@ function Show_Menu() {
  ${Font_Green}8.${Font_None} 查看现有Ehco配置
  ${Font_Green}9.${Font_None} 删除一则Ehco配置
 ————————————
- ${Font_Green}10.${Font_None} Ehco定时重启配置
+ ${Font_Green}10.${Font_None} 初始化Ehco的配置
  ${Font_Green}11.${Font_None} 切换Ehco配置模式
 ————————————
  ${Font_Green}12.${Font_None} 更新EasyEhco脚本
@@ -917,7 +917,7 @@ function Show_Menu() {
 		Del_Rule
 	;;
 	10)
-		Cron_Restart
+		Download_Config
 	;;
 	11)
 		Config_Mode
