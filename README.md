@@ -17,7 +17,7 @@ wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/wf-nb/EasyEhco/ehco.s
 wget -N --no-check-certificate https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/main/ehco.sh && chmod +x ehco.sh && ./ehco.sh
 ```
 
-##特别鸣谢
+## 特别鸣谢
 * Ehco1996:[Ehco](https://github.com/Ehco1996/ehco)
 * KANIKIG:[Multi-EasyGost](https://github.com/KANIKIG/Multi-EasyGost)
 * sjlleo:[ehco.sh](https://github.com/sjlleo/ehco.sh)
