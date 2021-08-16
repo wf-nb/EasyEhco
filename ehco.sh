@@ -391,8 +391,12 @@ function Show_Rule() {
 
 #添加到本地配置文件
 function Add_Config() {
-	if [ ! -z $1 ] && [ ! -z $2 ] && [ ! -z $3 ] && [ ! -z $4 ] && [ ! -z $5 ] && [ ! -z $6 ] && [ ! -z $7 ] && [ ! -z $8 ]; then
-		Rule_Json="{\"listen\":\"$1:$2\",\"listen_type\":\"$3\",\"transport_type\":\"$4\",\"tcp_remotes\":[\"$5:$6\"],\"udp_remotes\":[\"$7:$8\"]}"
+	if [ ! -z $1 ] && [ ! -z $2 ] && [ ! -z $3 ] && [ ! -z $4 ] && [ ! -z $5 ] && [ ! -z $6 ]; then
+		if [ ! -z $7 ] && [ ! -z $8 ]; then
+			Rule_Json="{\"listen\":\"$1:$2\",\"listen_type\":\"$3\",\"transport_type\":\"$4\",\"tcp_remotes\":[\"$5:$6\"],\"udp_remotes\":[\"$7:$8\"]}"
+		else
+			Rule_Json="{\"listen\":\"$1:$2\",\"listen_type\":\"$3\",\"transport_type\":\"$4\",\"tcp_remotes\":[\"$5:$6\"],\"udp_remotes\":[]}"
+		fi
 		Rule_Result=$(echo "$Get_Config_Text" | jq --argjson Rule_Arr "$Rule_Json" '.relay_configs += [$Rule_Arr]')
 		if [ ! -z "$Rule_Result" ]; then
 			echo $Rule_Result > $Path_Dir/config.json
@@ -483,7 +487,7 @@ function Add_Encryptws() {
 	echo -e "${Info} 检测端口占用"
 	sleep 1s
 	Check_Port "$Read_Local_Port"
-	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "ws" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "ws" "ws://$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
 }
 
 #wss隧道加密转发
@@ -521,7 +525,7 @@ function Add_Encryptwss() {
 	echo -e "${Info} 检测端口占用"
 	sleep 1s
 	Check_Port "$Read_Local_Port"
-	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "wss" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "wss" "wss://$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
 }
 
 #mwss隧道加密转发
@@ -559,7 +563,7 @@ function Add_Encryptmwss() {
 	echo -e "${Info} 检测端口占用"
 	sleep 1s
 	Check_Port "$Read_Local_Port"
-	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "mwss" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "raw" "mwss" "mwss://$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
 }
 
 #ws隧道解密落地
@@ -597,7 +601,7 @@ function Add_Decryptws() {
 	echo -e "${Info} 检测端口占用"
 	sleep 1s
 	Check_Port "$Read_Local_Port"
-	Add_Config "$Read_Local_IP" "$Read_Local_Port" "ws" "raw" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "ws" "raw" "$Read_Remote_IP" "$Read_Remote_Port"
 }
 
 #wss隧道解密落地
@@ -635,7 +639,7 @@ function Add_Decryptwss() {
 	echo -e "${Info} 检测端口占用"
 	sleep 1s
 	Check_Port "$Read_Local_Port"
-	Add_Config "$Read_Local_IP" "$Read_Local_Port" "wss" "raw" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "wss" "raw" "$Read_Remote_IP" "$Read_Remote_Port"
 }
 
 #mwss隧道解密落地
@@ -673,7 +677,7 @@ function Add_Decryptmwss() {
 	echo -e "${Info} 检测端口占用"
 	sleep 1s
 	Check_Port "$Read_Local_Port"
-	Add_Config "$Read_Local_IP" "$Read_Local_Port" "mwss" "raw" "$Read_Remote_IP" "$Read_Remote_Port" "$Read_Remote_IP" "$Read_Remote_Port"
+	Add_Config "$Read_Local_IP" "$Read_Local_Port" "mwss" "raw" "$Read_Remote_IP" "$Read_Remote_Port"
 }
 
 #检测端口
