@@ -19,7 +19,11 @@ Success="${Font_Green}[信息]${Font_None}"
 Path_Dir="/etc/ehco"
 Path_Conf="{$Path_Dir}/config.json"
 Path_Log="{$Path_Dir}/log.txt"
-Path_Ctl="/usr/lib/systemd/system/ehco.service"
+if [ ! -d /usr/lib/systemd/system ]; then
+	Path_Ctl="/etc/systemd/system/socks5.service"
+else
+	Path_Ctl="/usr/lib/systemd/system/socks5.service"
+fi
 
 #Root用户
 Get_User=$(env | grep USER | cut -d "=" -f 2)
