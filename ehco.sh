@@ -20,9 +20,9 @@ Path_Dir="/etc/ehco"
 Path_Conf="{$Path_Dir}/config.json"
 Path_Log="{$Path_Dir}/log.txt"
 if [ ! -d /usr/lib/systemd/system ]; then
-	Path_Ctl="/etc/systemd/system/socks5.service"
+	Path_Ctl="/etc/systemd/system/ehco.service"
 else
-	Path_Ctl="/usr/lib/systemd/system/socks5.service"
+	Path_Ctl="/usr/lib/systemd/system/ehco.service"
 fi
 
 #Root用户
@@ -108,8 +108,8 @@ function Download_Config() {
 		mkdir ${Path_Dir}
 		touch ${Path_Dir}/config.json
 	fi
-	wget -N --no-check-certificate "https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/config.json" -O config.json && chmod +x config.json && mv config.json ${Path_Dir}/config.json
-	wget -N --no-check-certificate "https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/config.json.example" -O config.json.example && chmod +x config.json.example && mv config.json.example ${Path_Dir}/config.json.example
+	wget -N --no-check-certificate "https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/latest/config.json" -O config.json && chmod +x config.json && mv config.json ${Path_Dir}/config.json
+	wget -N --no-check-certificate "https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/latest/config.json.example" -O config.json.example && chmod +x config.json.example && mv config.json.example ${Path_Dir}/config.json.example
 }
 
 #配置Ehco
@@ -825,14 +825,14 @@ function Del_Rule() {
 #更新脚本
 function Update_Shell() {
 	echo -e "${Info} 当前版本为 [ ${Shell_Version} ]，开始检测最新版本..."
-	Shell_NewVer=$(wget --no-check-certificate -qO- "https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/ehco.sh"|grep 'Shell_Version="'|awk -F "=" '{print $NF}'|sed 's/\"//g'|head -1)
+	Shell_NewVer=$(wget --no-check-certificate -qO- "https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/latest/ehco.sh"|grep 'Shell_Version="'|awk -F "=" '{print $NF}'|sed 's/\"//g'|head -1)
 	[[ -z ${Shell_NewVer} ]] && echo -e "${Error} 检测最新版本失败" && Show_Menu
 	if [ $(awk -v Shell_NewVer="$Shell_NewVer" -v Shell_Version="$Shell_Version"  'BEGIN{print(Shell_NewVer>Shell_Version)?"1":"0"}') ]; then
 		echo -e "${Info} 发现新版本[ ${Shell_NewVer} ]，是否更新？[Y/n]"
 		read -p "(默认: Y):" Read_YN
 		[[ -z "${Read_YN}" ]] && Read_YN="Y"
 		if [[ ${Read_YN} == [Yy] ]]; then
-			wget -N --no-check-certificate https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/ehco.sh && chmod +x ehco.sh
+			wget -N --no-check-certificate https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/latest/ehco.sh && chmod +x ehco.sh
 			echo -e "${Success} 脚本已更新为最新版本[ ${Shell_NewVer} ]"
             sleep 3s
             Show_Menu
