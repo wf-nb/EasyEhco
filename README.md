@@ -4,17 +4,17 @@ Ehco多功能脚本
 ## 食用方法
 国外
 ```bash
-wget -N --no-check-certificate https://raw.githubusercontent.com/wf-nb/EasyEhco/main/ehco.sh && chmod +x ehco.sh && ./ehco.sh
+wget -N --no-check-certificate -O ehco.sh https://raw.githubusercontent.com/wf-nb/EasyEhco/master/ehco.sh && chmod +x ehco.sh && bash ehco.sh
 ```
 
 国内
 ```bash
-wget -N --no-check-certificate https://cdn.jsdelivr.net/gh/wf-nb/EasyEhco/ehco.sh && chmod +x ehco.sh && ./ehco.sh
+wget -N --no-check-certificate -O ehco.sh https://cdn.jsdelivr.net/gh/wf-nb/EasyEhco/ehco.sh && chmod +x ehco.sh && bash ehco.sh
 ```
 
 自动
 ```bash
-wget -N --no-check-certificate https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/main/ehco.sh && chmod +x ehco.sh && ./ehco.sh
+wget -N --no-check-certificate -O ehco.sh https://github.weifeng.workers.dev/https://github.com/wf-nb/EasyEhco/blob/master/ehco.sh && chmod +x ehco.sh && bash ehco.sh
 ```
 
 ## 特别鸣谢

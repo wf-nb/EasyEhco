@@ -1,6 +1,6 @@
 #!/bin/bash
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
-export PATH
+All_Path=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+export All_Path
 
 #脚本版本
 Shell_Version="1.0.0"
@@ -58,7 +58,7 @@ function Check_System() {
 	elif test "$Bit" = "x86_64"; then
 		Bit="amd64"
 	else
-		echo -e "{$Error} 抱歉 目前Ehco脚本仅支持x86_64,armv8l和aarch64架构"
+		echo -e "${Error} 抱歉 目前Ehco脚本仅支持x86_64,armv8l和aarch64架构"
 		exit 1
 	fi
 }
@@ -176,19 +176,18 @@ function Update_Ehco() {
 
 #卸载Ehco
 function Uninstall_Ehco() {
-	if test -o /usr/bin/ehco -o /etc/systemd/system/ehco.service -o ${Path_Dir}/config.json;then
-		sleep 3s
+	if test -o /usr/bin/ehco -o ${Path_Ctl} -o ${Path_Dir}/config.json;then
 		systemctl stop ehco.service
 		systemctl disable ehco.service
 		rm -rf /usr/bin/ehco
-		rm -rf /etc/systemd/system/ehco.service
+		rm -rf ${Path_Ctl}
 		rm -rf ${Path_Dir}/ehco
 		rm -rf ${Path_Dir}/config.json
 		echo -e "${Success} 成功卸载 Ehco "
 		sleep 3s
 		Show_Menu
 	else
-		echo -e "-${Error} 未安装 Ehco"
+		echo -e "${Error} 未安装 Ehco"
 		sleep 3s
 		Show_Menu
 	fi
@@ -237,13 +236,11 @@ function Config_Mode() {
 			read -p "请输入远程配置文件URL: " Read_Url
 			if [ ! -n "$Read_Url" ]; then
 				echo -e "${Error} 未输入远程配置文件URL"
-				sleep 3s
 				exit 1
 			fi
 			Config_Mode remote "$Read_Url"
 		else
 			echo -e "${Error} 输入错误"
-			sleep 3s
 			exit 1
 		fi
 	else
@@ -274,7 +271,6 @@ WantedBy=multi-user.target" > ehco.service
 			systemctl start ehco
 			systemctl enable ehco
 			echo -e "${Success} 成功切换为本地配置文件模式"
-			sleep 3s
 			exit 1
 		elif test "$1" = "remote"; then
 			if [ ! -d ${Path_Dir} ]; then
@@ -302,11 +298,9 @@ WantedBy=multi-user.target" > ehco.service
 			systemctl start ehco
 			systemctl enable ehco
 			echo -e "${Success} 成功切换为远程配置文件模式"
-			sleep 3s
 			exit 1
 		else
 			echo -e "${Error} 切换配置文件模式失败"
-			sleep 3s
 			exit 1
 		fi
 	fi
@@ -680,11 +674,7 @@ function Add_Decryptmwss() {
 
 #检测端口
 function Check_Port() {
-	netstat -help &> /dev/null
-	if [ $? -ne 0 ]; then
-		echo -e "${Error} Netstat组件丢失，请手动安装net-tools后重新运行脚本"
-		exit 1
-	else
+	if hash netstat 2>/dev/null; then
 		if [ ! -n "$1" ]; then
 			echo -e "${Error} 未传入端口"
 			exit 1
@@ -695,6 +685,9 @@ function Check_Port() {
 				exit 1
 			fi
 		fi
+	else
+		echo -e "${Error} Netstat组件丢失，请手动安装net-tools后重新运行脚本"
+		exit 1
 	fi
 }
 
