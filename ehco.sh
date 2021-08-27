@@ -399,7 +399,7 @@ function Add_Config() {
 		fi
 		Rule_Result=$(echo "$Get_Config_Text" | jq --argjson Rule_Arr "$Rule_Json" '.relay_configs += [$Rule_Arr]')
 		if [ ! -z "$Rule_Result" ]; then
-			echo $Rule_Result > $Path_Dir/config.json
+			echo -e "$Rule_Result" > $Path_Dir/config.json
 			systemctl restart ehco
 			echo -e "${Success} 添加转发规则成功，即将返回主菜单"
 			sleep 3s
@@ -687,7 +687,7 @@ function Check_Port() {
 			echo -e "${Error} 未传入端口"
 			exit 1
 		else
-			Get_Port_Info=$(netstat -nap | grep LISTEN | grep "$1")
+			Get_Port_Info=$(netstat -napt | grep LISTEN | grep "$1")
 			if [ ! -z "$Get_Port_Info" ]; then
 				echo -e "${Error} 端口[$1]已被占用"
 				exit 1
@@ -815,7 +815,7 @@ function Del_Rule() {
 	Rule_Json=$(echo $Get_Config_Rules | jq -r ".[$Read_Num]")
 	Rule_Result=$(echo "$Get_Config_Text" | jq --argjson Rule_Arr "$Rule_Json" '.relay_configs -= [$Rule_Arr]')
 	if [ ! -z "$Rule_Result" ]; then
-		echo $Rule_Result > $Path_Dir/config.json
+		echo -e "$Rule_Result" > $Path_Dir/config.json
 		systemctl restart ehco
 		echo -e "${Success} 删除转发规则成功，即将返回主菜单"
 		sleep 3s
